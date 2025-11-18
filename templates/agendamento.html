@@ -1,0 +1,395 @@
+{% extends 'base_nails.html' %}
+{% block content %}
+
+<!-- 🔹 TÍTULO E BOTÃO -->
+<div class="flex justify-between items-center mb-8">
+  <h1 class="text-3xl font-bold text-pink-600">Agendamentos</h1>
+  <button id="btnNovo" class="bg-pink-600 text-white px-5 py-2 rounded-lg hover:bg-pink-700 transition">
+    + Novo Agendamento
+  </button>
+</div>
+
+<!-- 🔹 FILTROS -->
+<div class="flex flex-wrap gap-2 mb-6">
+  <button class="filtro-btn bg-white border rounded-lg px-4 py-2 hover:bg-pink-50" data-filtro="dia">Hoje</button>
+  <button class="filtro-btn bg-white border rounded-lg px-4 py-2 hover:bg-pink-50" data-filtro="semana">Semana</button>
+  <button class="filtro-btn bg-white border rounded-lg px-4 py-2 hover:bg-pink-50" data-filtro="mes">Mês</button>
+  <button class="filtro-btn bg-pink-600 text-white rounded-lg px-4 py-2" data-filtro="todos">Todos</button>
+</div>
+
+<!-- 🔹 TABELA DE AGENDAMENTOS -->
+<div class="bg-white rounded-xl shadow overflow-hidden">
+  <table class="min-w-full border-collapse">
+    <thead class="bg-pink-50 border-b">
+      <tr>
+        <th class="text-left p-3 font-semibold text-gray-700">Cliente</th>
+        <th class="text-left p-3 font-semibold text-gray-700">Data</th>
+        <th class="text-left p-3 font-semibold text-gray-700">Horário</th>
+        <th class="text-left p-3 font-semibold text-gray-700">Procedimento</th>
+        <th class="text-left p-3 font-semibold text-gray-700">Pagamento</th>
+        <th class="text-left p-3 font-semibold text-gray-700">Status</th>
+        <th class="text-left p-3 font-semibold text-gray-700">Ações</th>
+      </tr>
+    </thead>
+    <tbody id="tabelaAgendamentos" class="divide-y"></tbody>
+  </table>
+</div>
+
+<!-- ========================= -->
+<!-- 🔹 MODAL CENTRALIZADO -->
+<!-- ========================= -->
+<div id="modalNovo" class="fixed inset-0 bg-black/40 flex items-center justify-center z-40 hidden">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 animate-fadeIn relative max-h-[90vh] overflow-y-auto">
+    <h2 class="text-2xl font-semibold mb-6 text-pink-600 text-center" id="modalTitulo">Novo Agendamento</h2>
+
+    <form id="formAgendamento" class="space-y-5">
+      <input type="hidden" id="agendamentoId">
+
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Nome da Cliente</label>
+        <input type="text" id="cliente" required class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-pink-400">
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-gray-700 font-medium mb-1">Data</label>
+          <input type="date" id="data" required class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-pink-400">
+        </div>
+
+        <div>
+          <label class="block text-gray-700 font-medium mb-1">Horário</label>
+          <input type="time" id="hora" required class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-pink-400">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Procedimento</label>
+        <select id="procedimento" required class="w-full border rounded-lg p-2">
+          <option value="">Selecione um serviço</option>
+        </select>
+      </div>
+
+      <!-- 💰 VALORES -->
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Valor do Serviço (R$)</label>
+        <input type="number" step="0.01" id="valor_servico" class="w-full border rounded-lg p-2" placeholder="Ex: 120,00">
+      </div>
+
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Forma de Pagamento</label>
+        <select id="pagamento" class="w-full border rounded-lg p-2">
+          <option value="">Selecione</option>
+          <option value="Pago">Pago</option>
+          <option value="A Pagar">A Pagar</option>
+          <option value="Sinal Pago">Sinal Pago</option>
+        </select>
+      </div>
+
+      <!-- Campo sinal + restante -->
+      <div id="campoSinal" class="hidden">
+        <label class="block text-gray-700 font-medium mb-1">Valor do Sinal (R$)</label>
+        <input type="number" step="0.01" id="valor_sinal" class="w-full border rounded-lg p-2" placeholder="Ex: 50,00">
+      </div>
+
+      <div id="campoRestante" class="hidden">
+        <label class="block text-gray-700 font-medium mb-1">Falta pagar (R$)</label>
+        <input type="text" id="falta_pagar" class="w-full border rounded-lg p-2 bg-gray-100" disabled>
+      </div>
+
+      <!-- 🔹 STATUS DO ATENDIMENTO -->
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Status do Atendimento</label>
+        <select id="status" class="w-full border rounded-lg p-2">
+          <option value="Pendente">Pendente</option>
+          <option value="Concluído">Concluído</option>
+          <option value="Cliente faltou">Cliente faltou</option>
+          <option value="Remarcado">Remarcado</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Observações</label>
+        <textarea id="observacoes" rows="3" class="w-full border rounded-lg p-2" placeholder="Anotações importantes sobre o atendimento..."></textarea>
+      </div>
+
+      <div class="flex justify-end gap-3 mt-6">
+        <button type="button" id="btnCancelar" class="px-4 py-2 rounded-lg border hover:bg-gray-50">
+          Cancelar
+        </button>
+        <button type="submit" class="px-4 py-2 rounded-lg bg-pink-600 text-white hover:bg-pink-700">
+          Salvar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 🔹 TOAST (AVISO) -->
+<div id="toast"
+     class="fixed bottom-6 right-6 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity">
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  let agendamentos = [];
+  const tabela = document.getElementById("tabelaAgendamentos");
+  const filtroBtns = document.querySelectorAll(".filtro-btn");
+  const modal = document.getElementById("modalNovo");
+  const modalTitulo = document.getElementById("modalTitulo");
+  const campoSinal = document.getElementById("campoSinal");
+  const campoRestante = document.getElementById("campoRestante");
+
+  const showToast = (msg) => {
+    const toast = document.getElementById("toast");
+    const toastMsg = document.getElementById("toastMsg");
+    toastMsg.textContent = msg;
+    toast.classList.remove("opacity-0");
+    toast.classList.add("opacity-100");
+    setTimeout(() => {
+      toast.classList.add("opacity-0");
+      toast.classList.remove("opacity-100");
+    }, 2500);
+  };
+
+  const calcularRestante = () => {
+    const valorServico = parseFloat(document.getElementById("valor_servico").value) || 0;
+    const valorSinal = parseFloat(document.getElementById("valor_sinal").value) || 0;
+    const restante = Math.max(valorServico - valorSinal, 0);
+    document.getElementById("falta_pagar").value = restante.toFixed(2).replace(".", ",");
+  };
+
+  document.getElementById("valor_servico").addEventListener("input", () => {
+    if (!campoSinal.classList.contains("hidden")) calcularRestante();
+  });
+  document.getElementById("valor_sinal").addEventListener("input", calcularRestante);
+
+  // === Carregar serviços para o select de procedimento ===
+  async function carregarServicos() {
+    try {
+      const resp = await fetch("/api/servicos");
+      if (!resp.ok) return;
+      const servicos = await resp.json();
+      const selectProc = document.getElementById("procedimento");
+      selectProc.innerHTML = '<option value="">Selecione um serviço</option>';
+      servicos.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.nome;
+        opt.textContent = s.nome;
+        selectProc.appendChild(opt);
+      });
+    } catch (e) {
+      console.error("Erro ao carregar serviços:", e);
+    }
+  }
+
+  // === Carregar agendamentos da API ===
+  async function carregarAgendamentos() {
+    const resp = await fetch("/api/agendamentos");
+    agendamentos = await resp.json();
+    renderizarTabela("todos");
+  }
+
+  // === Badge bonitinha para o status ===
+  function statusBadge(status) {
+    let classes = "px-2 py-1 rounded-full text-xs font-semibold inline-flex items-center";
+    if (status === "Concluído") {
+      classes += " bg-green-100 text-green-700";
+    } else if (status === "Cliente faltou") {
+      classes += " bg-red-100 text-red-700";
+    } else if (status === "Remarcado") {
+      classes += " bg-yellow-100 text-yellow-700";
+    } else {
+      classes += " bg-gray-100 text-gray-700";
+    }
+    return `<span class="${classes}">${status}</span>`;
+  }
+
+  // === Renderizar tabela com filtro corrigido ===
+  function renderizarTabela(filtro = "todos") {
+    tabela.innerHTML = "";
+    const hoje = new Date();
+    const hojeDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+
+    // início e fim da semana (domingo a sábado)
+    const inicioSemana = new Date(hojeDia);
+    const diaSemana = inicioSemana.getDay(); // 0=domingo
+    inicioSemana.setDate(inicioSemana.getDate() - diaSemana);
+    const fimSemana = new Date(inicioSemana);
+    fimSemana.setDate(fimSemana.getDate() + 6);
+
+    const filtrados = agendamentos.filter(a => {
+      if (!a.data) return false;
+      const [ano, mes, dia] = a.data.split("-");
+      const data = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia));
+
+      if (filtro === "dia") {
+        return data.getTime() === hojeDia.getTime();
+      }
+      if (filtro === "semana") {
+        return data >= inicioSemana && data <= fimSemana;
+      }
+      if (filtro === "mes") {
+        return data.getMonth() === hojeDia.getMonth() && data.getFullYear() === hojeDia.getFullYear();
+      }
+      return true; // "todos"
+    });
+
+    filtrados.forEach(a => {
+      const tr = document.createElement("tr");
+      tr.classList.add("hover:bg-pink-50");
+
+      let pagamentoTexto = "—";
+      if (a.pagamento === "Pago") pagamentoTexto = "✅ Pago";
+      else if (a.pagamento === "A Pagar") pagamentoTexto = "❌ A Pagar";
+      else if (a.pagamento === "Sinal Pago") {
+        const sinal = parseFloat(a.valor_sinal || 0);
+        const total = parseFloat(a.valor_servico || 0);
+        const restante = total - sinal;
+        pagamentoTexto = `💰 Sinal Pago (R$ ${sinal.toFixed(2)}) → Falta R$ ${Math.max(restante,0).toFixed(2)}`;
+      }
+
+      const status = a.status || "Pendente";
+
+      tr.innerHTML = `
+        <td class="p-3">${a.cliente}</td>
+        <td class="p-3">${a.data.split("-").reverse().join("/")}</td>
+        <td class="p-3">${a.hora}</td>
+        <td class="p-3">${a.procedimento}</td>
+        <td class="p-3">${pagamentoTexto}</td>
+        <td class="p-3">${statusBadge(status)}</td>
+        <td class="p-3 flex gap-3">
+          <button data-id="${a.id}" class="text-blue-500 hover:text-blue-700 btn-editar">Editar</button>
+          <button data-id="${a.id}" class="text-red-500 hover:text-red-700 btn-excluir">Excluir</button>
+        </td>
+      `;
+      tabela.appendChild(tr);
+    });
+
+    // === Excluir ===
+    document.querySelectorAll(".btn-excluir").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        const id = e.target.dataset.id || e.target.closest("button").dataset.id;
+        if (confirm("Deseja realmente excluir este agendamento?")) {
+          await fetch(`/api/agendamentos/${id}`, { method: "DELETE" });
+          showToast("Agendamento excluído!");
+          carregarAgendamentos();
+        }
+      });
+    });
+
+    // === Editar ===
+    document.querySelectorAll(".btn-editar").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        const id = e.target.dataset.id || e.target.closest("button").dataset.id;
+        const ag = agendamentos.find(a => a.id == id);
+        if (ag) {
+          modalTitulo.textContent = "Editar Agendamento";
+          modal.classList.remove("hidden");
+          document.getElementById("agendamentoId").value = ag.id;
+          document.getElementById("cliente").value = ag.cliente;
+          document.getElementById("data").value = ag.data;
+          document.getElementById("hora").value = ag.hora;
+          document.getElementById("procedimento").value = ag.procedimento;
+          document.getElementById("pagamento").value = ag.pagamento || "";
+          document.getElementById("valor_servico").value = ag.valor_servico || "";
+          document.getElementById("valor_sinal").value = ag.valor_sinal || "";
+          document.getElementById("observacoes").value = ag.observacoes || "";
+          document.getElementById("status").value = ag.status || "Pendente";
+          calcularRestante();
+
+          if (ag.pagamento === "Sinal Pago") {
+            campoSinal.classList.remove("hidden");
+            campoRestante.classList.remove("hidden");
+          } else {
+            campoSinal.classList.add("hidden");
+            campoRestante.classList.add("hidden");
+          }
+        }
+      });
+    });
+  }
+
+  // === Filtros (aplica cor rosa no selecionado) ===
+  filtroBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      filtroBtns.forEach(b => {
+        b.classList.remove("bg-pink-600", "text-white");
+        if (!b.classList.contains("bg-white")) {
+          b.classList.add("bg-white");
+        }
+      });
+      btn.classList.remove("bg-white");
+      btn.classList.add("bg-pink-600", "text-white");
+      renderizarTabela(btn.dataset.filtro);
+    });
+  });
+
+  // === Abrir/fechar modal ===
+  document.getElementById("btnNovo").onclick = () => {
+    modalTitulo.textContent = "Novo Agendamento";
+    document.getElementById("formAgendamento").reset();
+    document.getElementById("agendamentoId").value = "";
+    campoSinal.classList.add("hidden");
+    campoRestante.classList.add("hidden");
+    document.getElementById("status").value = "Pendente";
+    modal.classList.remove("hidden");
+  };
+  document.getElementById("btnCancelar").onclick = () => modal.classList.add("hidden");
+
+  // Mostrar/ocultar campos de sinal
+  document.getElementById("pagamento").addEventListener("change", e => {
+    if (e.target.value === "Sinal Pago") {
+      campoSinal.classList.remove("hidden");
+      campoRestante.classList.remove("hidden");
+      calcularRestante();
+    } else {
+      campoSinal.classList.add("hidden");
+      campoRestante.classList.add("hidden");
+    }
+  });
+
+  // === Salvar ===
+  document.getElementById("formAgendamento").onsubmit = async e => {
+    e.preventDefault();
+    const id = document.getElementById("agendamentoId").value;
+    const dados = {
+      cliente: document.getElementById("cliente").value,
+      data: document.getElementById("data").value,
+      hora: document.getElementById("hora").value,
+      procedimento: document.getElementById("procedimento").value,
+      pagamento: document.getElementById("pagamento").value,
+      valor_servico: parseFloat(document.getElementById("valor_servico").value) || 0,
+      valor_sinal: parseFloat(document.getElementById("valor_sinal").value) || 0,
+      observacoes: document.getElementById("observacoes").value,
+      status: document.getElementById("status").value,
+    };
+
+    const method = id ? "PUT" : "POST";
+    const url = id ? `/api/agendamentos/${id}` : "/api/agendamentos";
+
+    try {
+      const resp = await fetch(url, {
+        method,
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(dados)
+      });
+
+      if (!resp.ok) throw new Error(await resp.text());
+
+      modal.classList.add("hidden");
+      e.target.reset();
+      showToast(id ? "Agendamento atualizado!" : "Agendamento salvo!");
+      carregarAgendamentos();
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao salvar agendamento! Verifique os campos e tente novamente.");
+    }
+  };
+
+  await carregarServicos();
+  await carregarAgendamentos();
+});
+</script>
+
+{% endblock %}

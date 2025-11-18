@@ -1,0 +1,202 @@
+{% extends 'base_nails.html' %}
+{% block content %}
+
+<style>
+    /* === TEMA NAILS DESIGNER === */
+    body {
+        background-color: #fdf2f8;
+    }
+    .sidebar {
+        background: linear-gradient(to bottom, #ec4899, #f472b6);
+        color: white;
+        min-height: 100vh;
+        width: 230px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        padding: 25px 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .sidebar h2 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .sidebar a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 25px;
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: background 0.2s ease-in-out;
+    }
+    .sidebar a:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+    .sidebar .logout {
+        padding: 12px 25px;
+        background-color: rgba(255, 255, 255, 0.15);
+        margin: 20px;
+        border-radius: 8px;
+        text-align: center;
+        transition: background 0.3s;
+    }
+    .sidebar .logout:hover {
+        background-color: rgba(255, 255, 255, 0.25);
+    }
+
+    /* === CONTEÚDO PRINCIPAL === */
+    .main-content {
+        margin-left: 250px;
+        padding: 40px;
+    }
+
+    .card {
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        padding: 25px;
+        text-align: center;
+        transition: transform 0.2s ease-in-out;
+    }
+    .card:hover {
+        transform: translateY(-4px);
+    }
+    .card h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 8px;
+    }
+    .card p {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #111;
+    }
+    .section-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #be185d;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div class="sidebar">
+    <div>
+        <h2>Nails Finanças</h2>
+        <a href="{{ url_for('index') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+        <a href="{{ url_for('agendamento') }}"><i data-lucide="calendar-plus"></i> Novo Agendamento</a>
+        <a href="{{ url_for('servicos') }}"><i data-lucide="scissors"></i> Serviços</a>
+        <a href="{{ url_for('fluxo_caixa') }}"><i data-lucide="wallet"></i> Fluxo de Caixa</a>
+        <a href="#"><i data-lucide="users"></i> Clientes</a>
+        <a href="#"><i data-lucide="settings"></i> Configurações</a>
+    </div>
+    <div class="logout">
+        <a href="#"><i data-lucide="log-out"></i> Sair</a>
+    </div>
+</div>
+
+<div class="main-content">
+    <h1 class="text-3xl font-bold text-pink-600 mb-4">Painel Financeiro</h1>
+    <p class="text-gray-600 mb-8">Visão geral do faturamento diário</p>
+
+    <!-- Cards de Indicadores -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="card">
+            <h3>Faturamento Bruto 💰</h3>
+            <p>R$ {{ total_bruto | default("0.00") }}</p>
+        </div>
+        <div class="card">
+            <h3>Lucro Líquido 💎</h3>
+            <p>R$ {{ total_liquido | default("0.00") }}</p>
+        </div>
+        <div class="card">
+            <h3>Ticket Médio 📊</h3>
+            <p>R$ {{ ticket_medio | default("0.00") }}</p>
+        </div>
+        <div class="card">
+            <h3>Vendas Hoje 🛍️</h3>
+            <p>{{ qtd_vendas | default("0") }}</p>
+        </div>
+    </div>
+
+    <!-- Resumo Diário -->
+    <h2 class="section-title">Resumo Diário</h2>
+    <p class="text-gray-700">
+        Hoje foram realizadas <strong>{{ qtd_vendas }}</strong> vendas,
+        totalizando <strong>R$ {{ total_bruto }}</strong> de faturamento bruto
+        e <strong>R$ {{ total_liquido }}</strong> líquidos.
+    </p>
+
+    <!-- Gráficos -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        <div class="card">
+            <h3 class="text-pink-600 font-semibold mb-4">Faturamento dos Últimos Dias</h3>
+            <canvas id="chartFaturamento"></canvas>
+        </div>
+        <div class="card">
+            <h3 class="text-pink-600 font-semibold mb-4">Serviços Mais Vendidos</h3>
+            <canvas id="chartServicos"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+lucide.createIcons();
+
+async function carregarDashboard() {
+    const res = await fetch("/api/dashboard");
+    const dados = await res.json();
+
+    // Atualiza os cards
+    document.querySelectorAll(".card")[0].querySelector("p").innerText = `R$ ${dados.total_bruto.toFixed(2)}`;
+    document.querySelectorAll(".card")[1].querySelector("p").innerText = `R$ ${dados.total_liquido.toFixed(2)}`;
+    document.querySelectorAll(".card")[2].querySelector("p").innerText = `R$ ${dados.ticket_medio.toFixed(2)}`;
+    document.querySelectorAll(".card")[3].querySelector("p").innerText = dados.qtd_vendas;
+
+    // === Gráfico de Faturamento ===
+    const ctxFaturamento = document.getElementById('chartFaturamento').getContext('2d');
+    new Chart(ctxFaturamento, {
+        type: 'line',
+        data: {
+            labels: dados.grafico_faturamento.map(d => d.dia),
+            datasets: [{
+                label: 'Faturamento (R$)',
+                data: dados.grafico_faturamento.map(d => d.total),
+                borderColor: '#ec4899',
+                tension: 0.3,
+                fill: true,
+                backgroundColor: 'rgba(236, 72, 153, 0.1)',
+            }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    // === Gráfico de Serviços Mais Vendidos ===
+    const ctxServicos = document.getElementById('chartServicos').getContext('2d');
+    new Chart(ctxServicos, {
+        type: 'bar',
+        data: {
+            labels: dados.grafico_servicos.map(s => s.servico),
+            datasets: [{
+                label: 'Vendas',
+                data: dados.grafico_servicos.map(s => s.qtd),
+                backgroundColor: '#f472b6'
+            }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+}
+
+// Atualiza automaticamente a cada 15 segundos
+carregarDashboard();
+setInterval(carregarDashboard, 15000);
+</script>
+
+{% endblock %}

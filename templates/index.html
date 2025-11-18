@@ -1,0 +1,90 @@
+{% extends 'base_nails.html' %}
+{% block content %}
+
+<h1 class="text-3xl font-bold text-pink-600 mb-4">Painel Financeiro</h1>
+<p class="text-gray-600 mb-8">Visão geral do faturamento diário</p>
+
+<!-- Cards de Indicadores -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="bg-white rounded-xl shadow-md p-6 text-center hover:-translate-y-1 transition">
+        <h3 class="text-gray-600 font-semibold mb-1">Faturamento Bruto 💰</h3>
+        <p class="text-2xl font-bold text-gray-900">R$ {{ total_bruto | default("0.00") }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-md p-6 text-center hover:-translate-y-1 transition">
+        <h3 class="text-gray-600 font-semibold mb-1">Lucro Líquido 💎</h3>
+        <p class="text-2xl font-bold text-gray-900">R$ {{ total_liquido | default("0.00") }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-md p-6 text-center hover:-translate-y-1 transition">
+        <h3 class="text-gray-600 font-semibold mb-1">Ticket Médio 📊</h3>
+        <p class="text-2xl font-bold text-gray-900">R$ {{ ticket_medio | default("0.00") }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-md p-6 text-center hover:-translate-y-1 transition">
+        <h3 class="text-gray-600 font-semibold mb-1">Vendas Hoje 🛍️</h3>
+        <p class="text-2xl font-bold text-gray-900">{{ qtd_vendas | default("0") }}</p>
+    </div>
+</div>
+
+<!-- Resumo Diário -->
+<h2 class="text-xl font-bold text-pink-600 mt-10 mb-4">Resumo Diário</h2>
+<p class="text-gray-700">
+    Hoje foram realizadas <strong>{{ qtd_vendas }}</strong> vendas,
+    totalizando <strong>R$ {{ total_bruto }}</strong> de faturamento bruto
+    e <strong>R$ {{ total_liquido }}</strong> líquidos.
+</p>
+
+<!-- Gráficos -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h3 class="text-pink-600 font-semibold mb-4">Faturamento dos Últimos Dias</h3>
+        <canvas id="chartFaturamento"></canvas>
+    </div>
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h3 class="text-pink-600 font-semibold mb-4">Serviços Mais Vendidos</h3>
+        <canvas id="chartServicos"></canvas>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+
+    const ctxFaturamento = document.getElementById('chartFaturamento').getContext('2d');
+    new Chart(ctxFaturamento, {
+        type: 'line',
+        data: {
+            labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+            datasets: [{
+                label: 'Faturamento (R$)',
+                data: [120, 150, 180, 200, 160, 220, 190],
+                borderColor: '#ec4899',
+                tension: 0.3,
+                fill: true,
+                backgroundColor: 'rgba(236, 72, 153, 0.1)',
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    const ctxServicos = document.getElementById('chartServicos').getContext('2d');
+    new Chart(ctxServicos, {
+        type: 'bar',
+        data: {
+            labels: ['Alongamento', 'Esmaltação', 'Spa', 'Design', 'Cutilagem'],
+            datasets: [{
+                label: 'Vendas',
+                data: [5, 7, 3, 8, 4],
+                backgroundColor: '#f472b6'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+</script>
+
+{% endblock %}

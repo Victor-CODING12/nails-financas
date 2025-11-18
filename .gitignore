@@ -1,0 +1,28 @@
+# Ambiente virtual
+venv/
+env/
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Banco de dados
+*.db
+instance/
+instance/*.db
+
+# Configs do VSCode
+.vscode/
+
+# Logs
+*.log
+
+# Arquivos temporários
+*.tmp
+*.cache
+
+# Uploads
+uploads/
+media/
